@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "docenv": "^2.0.6",
+    "dotenv": "^17.2.1",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "passport": "^0.7.0",
+    "passport-azure-ad": "^4.3.5"
+  }
+}
