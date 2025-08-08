@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - 多方式选择</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .login-card {
+      max-width: 500px;
+      margin: 2rem auto;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.5rem 0;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .divider:not(:empty)::before {
+      margin-right: .75rem;
+    }
+    .divider:not(:empty)::after {
+      margin-left: .75rem;
+    }
+    .btn-provider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+    .btn-provider i {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card login-card">
+      <div class="card-header bg-primary text-white">
+        <h2 class="text-center">登录您的账户</h2>
+      </div>
+      
+      <div class="card-body">
+        <% if (messages.error.length) { %>
+          <div class="alert alert-danger">
+            <%= messages.error %>
+          </div>
+        <% } %>
+        
+        <% if (messages.info.length) { %>
+          <div class="alert alert-info">
+            <%= messages.info %>
+          </div>
+        <% } %>
+        
+        <!-- 第三方登录选项 -->
+        <a href="/auth/entra" class="btn btn-outline-primary btn-provider">
+          <i class="bi bi-microsoft"></i> 使用 Microsoft Entra ID 登录
+        </a>
+        
+        <a href="/auth/google" class="btn btn-outline-danger btn-provider">
+          <i class="bi bi-google"></i> 使用 Google 登录
+        </a>
+        
+        <div class="divider">或</div>
+        
+        <!-- 本地登录表单 -->
+        <form action="/auth/login" method="post">
+          <div class="mb-3">
+            <label for="email" class="form-label">邮箱地址</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="password" class="form-label">密码</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+          </div>
+          
+          <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-primary">登录</button>
+          </div>
+        </form>
+        
+        <div class="text-center">
+          <p>还没有账户？ <a href="/register">立即注册</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</body>
+</html>

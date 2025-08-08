@@ -1,90 +1,71 @@
-
-
-
-
-
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-const { strategy, sessionConfig, serializeUser, deserializeUser } = require('./authConfig');
+const flash = require('express-flash');
+const dotenv = require('dotenv');
+const path = require('path');
+
+// 加载环境变量
+dotenv.config();
+
+// 数据库连接
+const db = require('./database/db');
+
+// 策略配置
+const entraStrategy = require('./auth/entraStrategy');
+const googleStrategy = require('./auth/googleStrategy');
+const localStrategy = require('./auth/localStrategy');
+
+// 路由
+const authRoutes = require('./routes/authRoutes');
+const webRoutes = require('./routes/webRoutes');
+
+// 创建 Express 应用
 const app = express();
 
-// 设置视图引擎为EJS
+// 设置视图引擎
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // 中间件
 app.use(express.urlencoded({ extended: true }));
-app.use(session(sessionConfig));
+app.use(express.static('public'));
+app.use(flash());
+
+// 会话配置
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // 开发环境用false，生产环境用true
+    maxAge: 24 * 60 * 60 * 1000 // 24小时
+  }
+}));
+
+// Passport 初始化
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 序列化设置
-passport.serializeUser(serializeUser);
-passport.deserializeUser(deserializeUser);
-passport.use(strategy);
-
-// 中间件：记录请求信息（调试用）
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Auth: ${req.isAuthenticated()}`);
-  next();
+// Passport 序列化
+passport.serializeUser((user, done) => {
+  done(null, user.id);
 });
 
-// 路由：首页
-app.get('/', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.redirect('/login');
-  }
-  res.render('index', { 
-    user: req.user,
-    sessionID: req.sessionID // 用于调试
+passport.deserializeUser((id, done) => {
+  db.get('SELECT * FROM users WHERE id = ?', [id], (err, user) => {
+    done(err, user);
   });
 });
 
-// 路由：登录
-app.get('/login', (req, res, next) => {
-  if (req.isAuthenticated()) {
-    return res.redirect('/');
-  }
-  passport.authenticate('azuread-openidconnect', {
-    failureRedirect: '/login-failed',
-    failureFlash: true
-  })(req, res, next);
-});
+// 注册策略
+passport.use('entra-id', entraStrategy);
+passport.use('google', googleStrategy);
+passport.use('local', localStrategy);
 
-// 路由：登录回调（Entra ID回调到这里）
-app.post('/auth/openid/return', 
-  passport.authenticate('azuread-openidconnect', {
-    failureRedirect: '/login-failed',
-    failureFlash: true
-  }),
-  (req, res) => {
-    // 认证成功，重定向到首页
-    res.redirect('/');
-  }
-);
-
-// 路由：登录失败
-app.get('/login-failed', (req, res) => {
-  const errorMessage = req.flash('error')[0] || '未知错误';
-  res.render('login-failed', { error: errorMessage });
-});
-
-// 路由：登出
-app.get('/logout', (req, res) => {
-  req.logout((err) => {
-    if (err) {
-      console.error('登出错误:', err);
-      return res.status(500).send('登出失败');
-    }
-    // 销毁会话
-    req.session.destroy((err) => {
-      if (err) console.error('会话销毁错误:', err);
-      // 重定向到Entra ID登出端点
-      const logoutUrl = `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(process.env.POST_LOGOUT_REDIRECT_URI)}`;
-      res.redirect(logoutUrl);
-    });
-  });
-});
+// 路由
+app.use('/auth', authRoutes);
+app.use('/', webRoutes);
 
 // 启动服务器
 const port = process.env.PORT || 3333;
